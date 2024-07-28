@@ -151,6 +151,18 @@ int writeEncoderData(int deviceId, int count, uint period, uint divisor, char* b
   return i-offset; // +1 for the size byte
 }
 
+int writeDutyCycleEncoderData(int deviceId, unsigned int duty, char* buffer, int offset) {
+  // Encoder message is 6 bytes
+  // tag(1) id(1) int(4)
+  int i = offset;
+  buffer[i++] = 2 + sizeof(int);
+  buffer[i++] = XRP_TAG_DUTYCYCLEENCODER;
+  buffer[i++] = deviceId & 0xFF;
+  int32ToNetwork(duty, buffer, i);
+  i += sizeof(uint);
+  return i-offset; // +1 for the size byte
+}
+
 int writeDIOData(int deviceId, bool value, char* buffer, int offset) {
   // DIO Message is 3 bytes
   // tag(1) id(1) value(1)

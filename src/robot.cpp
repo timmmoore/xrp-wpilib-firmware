@@ -14,6 +14,8 @@
 #define ULTRASONIC_ECHO_PIN 21
 #define ULTRASONIC_MAX_PULSE_WIDTH 23200
 
+void setmotor(int motor, double speed);
+
 namespace xrp {
 
 bool _robotInitialized = false;
@@ -38,7 +40,7 @@ std::vector<std::pair<int, int> > _encoderPins = {
 std::map<int, int> _encoderWPILibChannelToNativeMap;
 
 //Encoder PIO
-Encoder encoders[4];
+//Encoder encoders[4];
 
 
 // Reflectance
@@ -52,11 +54,12 @@ const float RANGEFINDER_MAX_DIST_M = 4.0f;
 bool _initEncoders() {
   for(int i=0; i < 4; ++i) {
     int pin = _encoderPins[i].first;
-
+/*
     if(!encoders[i].init(pin)) {
       Serial.printf("[ENC-%u] Failed to set up program.\n", i);
       return false;
     }
+*/
   }
 
   return true;
@@ -64,6 +67,7 @@ bool _initEncoders() {
 
 int _updateEncoders() {
   int count = 0;
+  /*
   for(int i=0; i < 4; ++i) {
     auto& encoder = encoders[i];
     int next = encoder.update();
@@ -72,11 +76,13 @@ int _updateEncoders() {
     }
     count += next;
   }
+  */
   return count;
 }
 
 
 void _initMotors() {
+/*
   // Left
   pinMode(XRP_LEFT_MOTOR_EN, OUTPUT);
   pinMode(XRP_LEFT_MOTOR_PH, OUTPUT);
@@ -96,6 +102,7 @@ void _initMotors() {
   // Servos
   // pinMode(XRP_SERVO_1_PIN, OUTPUT);
   // pinMode(XRP_SERVO_2_PIN, OUTPUT);
+*/
 }
 
 bool _initServos() {
@@ -113,12 +120,13 @@ bool _initServos() {
   return success;
 }
 
-void _setMotorPwmValueInternal(int en, int ph, double value) {
+void _setMotorPwmValueInternal(int channel, int en, int ph, double value) {
   PinStatus phValue = (value < 0.0) ? LOW : HIGH;
   int enValue = (abs(value) * 255);
 
-  digitalWrite(ph, phValue);
-  analogWrite(en, enValue);
+//  digitalWrite(ph, phValue);
+//  analogWrite(en, enValue);
+  ::setmotor(channel, value);
 }
 
 void _setServoPwmValueInternal(int servoIdx, double value) {
@@ -142,16 +150,28 @@ void _setPwmValueInternal(int channel, double value, bool override) {
   // Hard coded channel list
   switch (channel) {
     case WPILIB_CH_PWM_MOTOR_L:
-      _setMotorPwmValueInternal(XRP_LEFT_MOTOR_EN, XRP_LEFT_MOTOR_PH, value);
+      _setMotorPwmValueInternal(channel, XRP_LEFT_MOTOR_EN, XRP_LEFT_MOTOR_PH, value);
       break;
     case WPILIB_CH_PWM_MOTOR_R:
-      _setMotorPwmValueInternal(XRP_RIGHT_MOTOR_EN, XRP_RIGHT_MOTOR_PH, value);
+      _setMotorPwmValueInternal(channel, XRP_RIGHT_MOTOR_EN, XRP_RIGHT_MOTOR_PH, value);
       break;
     case WPILIB_CH_PWM_MOTOR_3:
-      _setMotorPwmValueInternal(XRP_MOTOR_3_EN, XRP_MOTOR_3_PH, value);
+      _setMotorPwmValueInternal(channel, XRP_MOTOR_3_EN, XRP_MOTOR_3_PH, value);
       break;
     case WPILIB_CH_PWM_MOTOR_4:
-      _setMotorPwmValueInternal(XRP_MOTOR_4_EN, XRP_MOTOR_4_PH, value);
+      _setMotorPwmValueInternal(channel, XRP_MOTOR_4_EN, XRP_MOTOR_4_PH, value);
+      break;
+    case WPILIB_CH_PWM_MOTOR_5:
+      _setMotorPwmValueInternal(channel, XRP_MOTOR_4_EN, XRP_MOTOR_4_PH, value);
+      break;
+    case WPILIB_CH_PWM_MOTOR_6:
+      _setMotorPwmValueInternal(channel, XRP_MOTOR_4_EN, XRP_MOTOR_4_PH, value);
+      break;
+    case WPILIB_CH_PWM_MOTOR_7:
+      _setMotorPwmValueInternal(channel, XRP_MOTOR_4_EN, XRP_MOTOR_4_PH, value);
+      break;
+    case WPILIB_CH_PWM_MOTOR_8:
+      _setMotorPwmValueInternal(channel, XRP_MOTOR_4_EN, XRP_MOTOR_4_PH, value);
       break;
     case WPILIB_CH_PWM_SERVO_1:
       _setServoPwmValueInternal(0, value);
@@ -169,6 +189,10 @@ void _pwmShutoff() {
   _setPwmValueInternal(3, 0, true);
   _setPwmValueInternal(4, 0, true);
   _setPwmValueInternal(5, 0, true);
+  _setPwmValueInternal(6, 0, true);
+  _setPwmValueInternal(7, 0, true);
+  _setPwmValueInternal(8, 0, true);
+  _setPwmValueInternal(9, 0, true);
 }
 
 void robotInit() {
@@ -236,9 +260,9 @@ void robotSetEnabled(bool enabled) {
   // Prevent motors from starting with arbitrary values when enabling
   if (!_robotEnabled && enabled) {
     _pwmShutoff();
-    for(auto& encoder : encoders) {
-      encoder.enable();
-    }
+//    for(auto& encoder : encoders) {
+//      encoder.enable();
+//    }
   }
 
   bool prevEnabledValue = _robotEnabled;
@@ -247,9 +271,9 @@ void robotSetEnabled(bool enabled) {
   if (prevEnabledValue && !enabled) {
     Serial.println("[XRP] Disabling");
     _pwmShutoff();
-    for(auto& encoder : encoders) {
-      encoder.disable();
-    }
+//    for(auto& encoder : encoders) {
+//      encoder.disable();
+//    }
   }
   else if (!prevEnabledValue && enabled) {
     Serial.println("[XRP] Enabling");
@@ -274,12 +298,22 @@ void configureEncoder(int deviceId, int chA, int chB) {
   }
 }
 
+int encodercount[4];
 int readEncoderRaw(int rawDeviceId) {
-  return encoders[rawDeviceId].getCount();
+  return encodercount[rawDeviceId]; //encoders[rawDeviceId].getCount();
 }
 
+void setencoderCount(int id, int value){
+  encodercount[id] = value;
+}
+
+int encoderperiod[4];
 uint readEncoderPeriod(int rawDeviceId) {
-  return encoders[rawDeviceId].getPeriod();
+  return encoderperiod[rawDeviceId]; //encoders[rawDeviceId].getPeriod();
+}
+
+void setencoderPeriod(int id, int value){
+  encoderperiod[id] = value;
 }
 
 void setPwmValue(int wpilibChannel, double value) {

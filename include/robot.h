@@ -40,8 +40,12 @@
 #define WPILIB_CH_PWM_MOTOR_R 1
 #define WPILIB_CH_PWM_MOTOR_3 2
 #define WPILIB_CH_PWM_MOTOR_4 3
-#define WPILIB_CH_PWM_SERVO_1 4
-#define WPILIB_CH_PWM_SERVO_2 5
+#define WPILIB_CH_PWM_MOTOR_5 4
+#define WPILIB_CH_PWM_MOTOR_6 5
+#define WPILIB_CH_PWM_MOTOR_7 6
+#define WPILIB_CH_PWM_MOTOR_8 7
+#define WPILIB_CH_PWM_SERVO_1 8
+#define WPILIB_CH_PWM_SERVO_2 9
 
 #define XRP_SERVO_MIN_PULSE_US 500
 #define XRP_SERVO_MAX_PULSE_US 2500
@@ -64,6 +68,8 @@ void robotSetEnabled(bool enabled);
 void configureEncoder(int deviceId, int chA, int chB);
 int readEncoderRaw(int rawDeviceId);
 uint readEncoderPeriod(int rawDeviceId);
+void setencoderCount(int id, int value);
+void setencoderPeriod(int id, int value);
 
 // PWM Related
 void setPwmValue(int wpilibChannel, double value);

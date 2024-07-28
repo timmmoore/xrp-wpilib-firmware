@@ -100,6 +100,8 @@ void updateRemoteInfo() {
   }
 }
 
+uint dutycycleencoder[4];
+
 void sendData() {
   int size = 0;
   char buffer[512];
@@ -124,6 +126,7 @@ void sendData() {
     static constexpr uint divisor = xrp::Encoder::getDivisor();
 
     ptr += wpilibudp::writeEncoderData(i, encoderValue, encoderPeriod, divisor, buffer, ptr);
+    ptr += wpilibudp::writeDutyCycleEncoderData(i, dutycycleencoder[i], buffer, ptr);
   } // 4x 15 bytes
 
   // DIO (currently just the button)
@@ -237,7 +240,8 @@ void checkPrintStatus() {
   if (millis() - _lastMessageStatusPrint > 5000) {
 
     int usedHeap = rp2040.getUsedHeap();
-    Serial.printf("t(ms):%u h:%d msg:%u lt(us):%u\n", millis(), usedHeap, _wsMessageCount, _avgLoopTimeUs);
+    Serial.printf("t(ms):%u h:%d msg:%u lt(us):%u w:%c\n", millis(), usedHeap, _wsMessageCount, _avgLoopTimeUs,
+      wpilibudp::dsWatchdogActive()?'t':'f');
     _lastMessageStatusPrint = millis();
   }
 }
@@ -262,8 +266,8 @@ void setup() {
   LittleFS.begin();
 
   // Set up the I2C pins
-  Wire1.setSCL(19);
-  Wire1.setSDA(18);
+  Wire1.setSCL(15); //19);
+  Wire1.setSDA(14); //18);
   Wire1.begin();
 
   delay(2000);
@@ -324,6 +328,92 @@ void setup() {
   singleFileDrive.begin("status.txt", "XRP-Status.txt");
 }
 
+// drive: m1, turn: m2
+void sendmotor(uint addr, float m1, float m2) {
+  // -1->0; 1->255
+  byte v[2];
+  v[0] = ((m1 + 1.0)/2.0)*255;
+  v[1] = ((m2 + 1.0)/2.0)*255;
+  Wire1.beginTransmission(addr);
+  Wire1.write(v, 2);
+  Wire1.endTransmission();
+}
+
+float speeds[8];
+// front left, front right, back left, back right
+// drive: 0, 2, 4, 6
+// turn: 1, 3, 5, 7
+void setmotor(int motor, double speed) {
+  uint addr;
+  float m1, m2;
+
+  switch(motor){
+  case 0:
+  case 1:
+    speeds[motor] = speed;
+    m1 = speeds[0];
+    m2 = speeds[1];
+    addr = 16;
+    break;
+  case 2:
+  case 3:
+    speeds[motor] = speed;
+    m1 = speeds[2];
+    m2 = speeds[3];
+    addr = 17;
+    break;
+  case 4:
+  case 5:
+    speeds[motor] = speed;
+    m1 = speeds[4];
+    m2 = speeds[5];
+    addr = 18;
+    break;
+  case 6:
+  case 7:
+    speeds[motor] = speed;
+    m1 = speeds[6];
+    m2 = speeds[7];
+    addr = 19;
+    break;
+  }
+  sendmotor(addr, m1, m2);
+}
+
+uint net2host(byte *ptr){
+  int u1 = ptr[0];
+  u1 = u1&0x000000ff;
+  int u2 = ptr[1];
+  u2 = (u2<<8)&0x0000ff00;
+  int u3 = ptr[2];
+  u3 = (u3<<16)&0x00ff0000;
+  int u4 = ptr[3];
+  u4 = (u4<<24)&0xff000000;
+  return u1+u2+u3+u4;
+}
+
+byte moduleaddr[4] = { 16, 17, 18, 19};
+
+void encoderPeriodic() {
+  byte buf[20];
+  uint v;
+  int i;
+  for(int ind = 0; ind < 4; ind++){
+    i = 0;
+    Wire1.requestFrom(moduleaddr[ind], 20, true);
+    while(Wire1.available()) {
+      buf[i] = Wire1.read();
+      if(i < 19)
+        i++;
+    }
+    xrp::setencoderCount(ind, net2host(&buf[0]));
+    xrp::setencoderPeriod(ind, net2host(&buf[4]));
+    v = net2host(&buf[8]);
+    dutycycleencoder[ind] = net2host(&buf[12]);
+    v = net2host(&buf[16]);
+  }
+}
+
 void loop() {
   unsigned long loopStartTime = micros();
 
@@ -335,11 +425,13 @@ void loop() {
 
     // Read the packet
     int n = udp.read(udpPacketBuf, UDP_TX_PACKET_MAX_SIZE);
-    wpilibudp::processPacket(udpPacketBuf, n);
+    if(wpilibudp::processPacket(udpPacketBuf, n))
+      _wsMessageCount++;
   }
 
   xrp::imuPeriodic();
   xrp::rangefinderPollForData();
+  encoderPeriodic();
 
   // Disable the robot when the UDP watchdog timesout
   // Also reset the max sequence number so we can handle reconnects
