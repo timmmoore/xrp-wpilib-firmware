@@ -91,4 +91,7 @@ float getRangefinderDistance5V();
 void rangefinderPollForData();
 void rangefinderPeriodic();
 
+void batteryInit();
+bool batteryInitialized();
+float getBatteryVoltange();
 } // namespace xrp

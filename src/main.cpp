@@ -166,6 +166,9 @@ void sendData() {
     ptr += wpilibudp::writeAnalogData(2, xrp::getRangefinderDistance5V(), buffer, ptr);
   }
 
+  if( xrp::batteryInitialized()){
+    ptr += wpilibudp::writeAnalogData(3, xrp::getBatteryVoltange(), buffer, ptr);
+  }
   // ptr should now point to 1 past the last byte
   size = ptr;
 
@@ -320,6 +323,8 @@ void setup() {
   // TODO enable this via configuration
   xrp::rangefinderInit();
 
+  xrp::batteryInit();
+
   _lastMessageStatusPrint = millis();
   _baselineUsedHeap = rp2040.getUsedHeap();
 
@@ -330,12 +335,16 @@ void setup() {
 
 // drive: m1, turn: m2
 void sendmotor(uint addr, float m1, float m2) {
-  // -1->0; 1->255
-  byte v[2];
-  v[0] = ((m1 + 1.0)/2.0)*255;
-  v[1] = ((m2 + 1.0)/2.0)*255;
+  // -1->900; 0->1500; 1->2100
+  byte v[4];
+  uint vm = (m1 + 1.0) * 600 + 900;
+  v[0] = vm & 0xff;
+  v[1] = (vm>>8) & 0xff;
+  vm = (m2 + 1.0) * 600 + 900;
+  v[2] = vm & 0xff;
+  v[3] = (vm>>8) & 0xff;
   Wire1.beginTransmission(addr);
-  Wire1.write(v, 2);
+  Wire1.write(v, 4);
   Wire1.endTransmission();
 }
 

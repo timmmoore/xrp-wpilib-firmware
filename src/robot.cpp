@@ -14,6 +14,8 @@
 #define ULTRASONIC_ECHO_PIN 21
 #define ULTRASONIC_MAX_PULSE_WIDTH 23200
 
+#define BATTERY_VOLTAGE 28
+
 void setmotor(int motor, double speed);
 
 namespace xrp {
@@ -42,6 +44,8 @@ std::map<int, int> _encoderWPILibChannelToNativeMap;
 //Encoder PIO
 //Encoder encoders[4];
 
+// battery voltage
+bool _batteryInitialized = false;
 
 // Reflectance
 bool _reflectanceInitialized = false;
@@ -99,10 +103,10 @@ void _initMotors() {
   pinMode(XRP_MOTOR_4_EN, OUTPUT);
   pinMode(XRP_MOTOR_4_PH, OUTPUT);
 
+*/
   // Servos
   // pinMode(XRP_SERVO_1_PIN, OUTPUT);
   // pinMode(XRP_SERVO_2_PIN, OUTPUT);
-*/
 }
 
 bool _initServos() {
@@ -359,6 +363,21 @@ float getReflectanceRight5V() {
   }
 
   return _readAnalogPinScaled(REFLECT_RIGHT_PIN) * 5.0f;
+}
+
+void batteryInit() {
+  _batteryInitialized = true;
+}
+
+bool batteryInitialized() {
+  return _batteryInitialized;
+}
+
+float getBatteryVoltange() {
+  if (!_batteryInitialized) {
+    return -1.0f;
+  }
+  return _readAnalogPinScaled(BATTERY_VOLTAGE) * 12.0f;
 }
 
 void rangefinderInit() {
