@@ -166,8 +166,8 @@ void sendData() {
     ptr += wpilibudp::writeAnalogData(2, xrp::getRangefinderDistance5V(), buffer, ptr);
   }
 
-  if( xrp::batteryInitialized()){
-    ptr += wpilibudp::writeAnalogData(3, xrp::getBatteryVoltange(), buffer, ptr);
+  if(xrp::batteryInitialized()){
+    ptr += wpilibudp::writeAnalogData(3, xrp::getBatteryVoltage(), buffer, ptr);
   }
   // ptr should now point to 1 past the last byte
   size = ptr;

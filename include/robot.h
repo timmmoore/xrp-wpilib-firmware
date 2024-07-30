@@ -93,5 +93,5 @@ void rangefinderPeriodic();
 
 void batteryInit();
 bool batteryInitialized();
-float getBatteryVoltange();
+float getBatteryVoltage();
 } // namespace xrp

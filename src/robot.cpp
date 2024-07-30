@@ -366,6 +366,7 @@ float getReflectanceRight5V() {
 }
 
 void batteryInit() {
+  analogReadResolution(12);
   _batteryInitialized = true;
 }
 
@@ -373,11 +374,11 @@ bool batteryInitialized() {
   return _batteryInitialized;
 }
 
-float getBatteryVoltange() {
+float getBatteryVoltage() {
   if (!_batteryInitialized) {
     return -1.0f;
   }
-  return _readAnalogPinScaled(BATTERY_VOLTAGE) * 12.0f;
+  return ((_readAnalogPinScaled(BATTERY_VOLTAGE) * 3.3f)*133.0f)/32.0f;
 }
 
 void rangefinderInit() {
