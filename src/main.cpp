@@ -118,7 +118,7 @@ void sendData() {
 
     // We want to flip the encoder 0 value (left motor encoder) so that this returns
     // positive values when moving forward.
-    if (i == 0) {
+    if ((i == 0) || (i == 2)) {
       encoderValue = -encoderValue;
       encoderPeriod ^= 1; //Last bit is direction bit; Flip it.
     }
