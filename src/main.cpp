@@ -116,7 +116,7 @@ void sendData() {
     int encoderValue = xrp::readEncoderRaw(i);
     uint encoderPeriod = xrp::readEncoderPeriod(i);
 
-    // We want to flip the encoder 0 value (left motor encoder) so that this returns
+    // We want to flip the encoder 0 and 2 value (left front/back motors encoder) so that this returns
     // positive values when moving forward.
     if ((i == 0) || (i == 2)) {
       encoderValue = -encoderValue;
@@ -337,6 +337,10 @@ void setup() {
 void sendmotor(uint addr, float m1, float m2) {
   // -1->900; 0->1500; 1->2100
   byte v[4];
+  if(m1 < -1) m1 = -1;
+  if(m1 > 1) m1 = 1;
+  if(m2 < -1) m2 = -1;
+  if(m2 > 1) m2 = 1;
   uint vm = (m1 + 1.0) * 600 + 900;
   v[0] = vm & 0xff;
   v[1] = (vm>>8) & 0xff;
@@ -348,6 +352,7 @@ void sendmotor(uint addr, float m1, float m2) {
   Wire1.endTransmission();
 }
 
+byte moduleaddr[4] = { 16, 17, 18, 19};
 float speeds[8];
 // front left, front right, back left, back right
 // drive: 0, 2, 4, 6
@@ -362,28 +367,28 @@ void setmotor(int motor, double speed) {
     speeds[motor] = speed;
     m1 = speeds[0];
     m2 = speeds[1];
-    addr = 16;
+    addr = moduleaddr[0];
     break;
   case 2:
   case 3:
     speeds[motor] = speed;
     m1 = speeds[2];
     m2 = speeds[3];
-    addr = 17;
+    addr = moduleaddr[1];
     break;
   case 4:
   case 5:
     speeds[motor] = speed;
     m1 = speeds[4];
     m2 = speeds[5];
-    addr = 18;
+    addr = moduleaddr[2];
     break;
   case 6:
   case 7:
     speeds[motor] = speed;
     m1 = speeds[6];
     m2 = speeds[7];
-    addr = 19;
+    addr = moduleaddr[3];
     break;
   }
   sendmotor(addr, m1, m2);
@@ -400,8 +405,6 @@ uint net2host(byte *ptr){
   u4 = (u4<<24)&0xff000000;
   return u1+u2+u3+u4;
 }
-
-byte moduleaddr[4] = { 16, 17, 18, 19};
 
 void encoderPeriodic() {
   byte buf[20];

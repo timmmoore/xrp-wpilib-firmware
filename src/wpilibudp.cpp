@@ -158,8 +158,12 @@ int writeDutyCycleEncoderData(int deviceId, unsigned int duty, char* buffer, int
   buffer[i++] = 2 + sizeof(int);
   buffer[i++] = XRP_TAG_DUTYCYCLEENCODER;
   buffer[i++] = deviceId & 0xFF;
-  int32ToNetwork(duty, buffer, i);
-  i += sizeof(uint);
+//  int32ToNetwork(duty, buffer, i);
+  float value = (float)(((double)duty-90.0)/450000.0);  // needs to be in 0-1
+  if(value < 0.0) value = 0.0;
+  if(value > 1.0) value = 1.0;
+  floatToNetwork(value, buffer, i);
+  i += sizeof(float);
   return i-offset; // +1 for the size byte
 }
 
