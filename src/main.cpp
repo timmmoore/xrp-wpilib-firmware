@@ -361,40 +361,15 @@ void setmotor(int motor, double speed) {
   uint addr;
   float m1, m2;
 
-  switch(motor){
-  case 0:
-  case 1:
-    speeds[motor] = speed;
-    m1 = speeds[0];
-    m2 = speeds[1];
-    addr = moduleaddr[0];
-    break;
-  case 2:
-  case 3:
-    speeds[motor] = speed;
-    m1 = speeds[2];
-    m2 = speeds[3];
-    addr = moduleaddr[1];
-    break;
-  case 4:
-  case 5:
-    speeds[motor] = speed;
-    m1 = speeds[4];
-    m2 = speeds[5];
-    addr = moduleaddr[2];
-    break;
-  case 6:
-  case 7:
-    speeds[motor] = speed;
-    m1 = speeds[6];
-    m2 = speeds[7];
-    addr = moduleaddr[3];
-    break;
-  }
+  speeds[motor] = speed;
+  m1 = speeds[(motor & ~1)];
+  m2 = speeds[(motor & ~1)+1];
+  addr = moduleaddr[motor/2];
+
   sendmotor(addr, m1, m2);
 }
 
-uint net2host(byte *ptr){
+uint net2host(char *ptr){
   int u1 = ptr[0];
   u1 = u1&0x000000ff;
   int u2 = ptr[1];
@@ -407,8 +382,8 @@ uint net2host(byte *ptr){
 }
 
 void encoderPeriodic() {
-  byte buf[20];
-  uint v;
+  char buf[20];
+  //uint v;
   int i;
   for(int ind = 0; ind < 4; ind++){
     i = 0;
@@ -418,11 +393,14 @@ void encoderPeriodic() {
       if(i < 19)
         i++;
     }
+    //xrp::setencoderCount(ind, networkToUInt32(buf, 0));
+    //xrp::setencoderPeriod(ind, networkToUInt32(buf, 4));
+    //dutycycleencoder[ind] = networkToUInt32(buf, 12);
     xrp::setencoderCount(ind, net2host(&buf[0]));
     xrp::setencoderPeriod(ind, net2host(&buf[4]));
-    v = net2host(&buf[8]);
+    //v = net2host(&buf[8]);
     dutycycleencoder[ind] = net2host(&buf[12]);
-    v = net2host(&buf[16]);
+    //v = net2host(&buf[16]);
   }
 }
 
